@@ -8,6 +8,11 @@ module DatabaseCleaner::Sequel
       case db.database_type
       when :postgres
         db.run('SET CONSTRAINTS ALL DEFERRED')
+        trigger_disables = ""
+        tables_to_truncate(db).each do |table|
+          trigger_disables << "ALTER TABLE \"#{table}\" DISABLE TRIGGER ALL;"
+        end
+        db.run(trigger_disables)
       when :mysql
         old = db.fetch('SELECT @@FOREIGN_KEY_CHECKS').first[:@@FOREIGN_KEY_CHECKS]
         db.run('SET FOREIGN_KEY_CHECKS = 0')
@@ -25,9 +30,11 @@ module DatabaseCleaner::Sequel
     end
 
     def delete_tables(db, tables)
+      to_delete = ""
       tables.each do |table|
-        db[table.to_sym].delete
+        to_delete << "DELETE FROM #{table};"
       end
+      db.run(to_delete)
     end
 
     def clean

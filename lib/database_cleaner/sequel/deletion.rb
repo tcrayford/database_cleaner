@@ -8,11 +8,6 @@ module DatabaseCleaner::Sequel
       case db.database_type
       when :postgres
         db.run('SET CONSTRAINTS ALL DEFERRED')
-        trigger_disables = ""
-        tables_to_truncate(db).each do |table|
-          trigger_disables << "ALTER TABLE \"#{table}\" DISABLE TRIGGER ALL;"
-        end
-        db.run(trigger_disables)
       when :mysql
         old = db.fetch('SELECT @@FOREIGN_KEY_CHECKS').first[:@@FOREIGN_KEY_CHECKS]
         db.run('SET FOREIGN_KEY_CHECKS = 0')
@@ -20,10 +15,6 @@ module DatabaseCleaner::Sequel
       yield
     ensure
       case db.database_type
-      when :postgres
-        tables.each do |table|
-          db.run("ALTER TABLE \"#{table}\" ENABLE TRIGGER ALL")
-        end
       when :mysql
         db.run("SET FOREIGN_KEY_CHECKS = #{old}")
       end
